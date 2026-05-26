@@ -1,0 +1,18 @@
+# Sensitive Credentials
+.env
+
+# Python caching files
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Streamlit local state
+.streamlit/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Large data sets or local CSV dumps (if any)
+*.csv
+*.xlsx
