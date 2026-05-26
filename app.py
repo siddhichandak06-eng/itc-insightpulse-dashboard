@@ -961,13 +961,19 @@ fund_allocator = st.Page(
     icon="💰"
 )
 
+brand_correlation= st.Page(
+    "pages/brand_correlation.py", 
+    title="Brand Correlation", 
+    icon="🏷️"
+)
+
 # 3. Dynamic Loop to find your custom individual brand files
 brand_diagnostic_pages = []
 
 if os.path.exists("pages"):
     for file in sorted(os.listdir("pages")):
         # Only look for python files, and ignore our main utility pages
-        if file.endswith(".py") and file not in ["planning_hub.py", "fund_allocator.py"]:
+        if file.endswith(".py") and file not in ["planning_hub.py", "fund_allocator.py", "brand_correlation.py"]:
             page_path = f"pages/{file}"
             
             # Clean up the filename to make a pretty title (e.g., 'fiama_di_wills.py' -> 'Fiama Di Wills')
@@ -980,7 +986,7 @@ if os.path.exists("pages"):
 # 4. Bind all modules into clean navigation dropdown categories
 navigation_ecosystem = st.navigation({
     "Executive Control Room": [main_dashboard],
-    "Strategic Analysis Labs": [planning_hub, fund_allocator],
+    "Strategic Analysis Labs": [planning_hub, fund_allocator, brand_correlation],
     "Brand Diagnostics Suite": brand_diagnostic_pages
 })
 
