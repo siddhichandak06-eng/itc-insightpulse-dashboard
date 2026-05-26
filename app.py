@@ -9,8 +9,11 @@ from datetime import datetime, timedelta
 import warnings
 import numpy as np
 import os
+from dotenv import load_dotenv
+load_dotenv() 
 
 warnings.filterwarnings("ignore")
+
 
 # ================================================================
 # PAGE CONFIG
@@ -288,7 +291,7 @@ def init_connection():
     except Exception as e:
         st.error(f"❌ Database Connection Error: {str(e)}")
         st.stop()
-        
+
 # ================================================================
 # DATA LOADING & CACHING
 # ================================================================
@@ -297,7 +300,13 @@ def load_data():
     """Load data from MySQL with validation"""
     try:
         query = "SELECT * FROM sales_data LIMIT 100000"
-        df = pd.read_sql(query, engine)
+        
+        # 🟢 FIX: Extract engine safely from session state instead of the raw variable
+        current_engine = st.session_state.get('db_engine')
+        if current_engine is None:
+            current_engine = init_connection()
+            
+        df = pd.read_sql(query, current_engine)
         
         # Data cleaning
         if 'Date' in df.columns:
