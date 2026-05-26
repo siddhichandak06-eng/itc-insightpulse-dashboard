@@ -111,7 +111,7 @@ if unit_choice == "Lakhs (₹ Input)":
     total_budget = budget_input * 100000
     formatted_budget = f"₹{budget_input:.2f} Lakhs"
 elif unit_choice == "Crores (₹ Input)":
-    budget_input = st.number_input("Enter Budget amount in Crores (1 Crore = ₹1,00,00,000)", min_value=0.1, max_value=100.0, value=1.0, step=0.5)
+    budget_input = st.number_input("Enter Budget amount in Crores (1 Crore = ₹1,0,00,000)", min_value=0.1, max_value=100.0, value=1.0, step=0.5)
     total_budget = budget_input * 10000000
     formatted_budget = f"₹{budget_input:.2f} Crores"
 else:
@@ -244,7 +244,7 @@ with action_col1:
         st.success("✅ Fund Allocation Plan successfully saved to memory!")
 
 with action_col2:
-    csv_export = pd.DataFrame(allocation_breakdown if 'allocation_breakdown' in locals() else allocation_data).to_csv(index=False)
+    csv_export = allocation_df.to_csv(index=False)
     st.download_button(
         label="📊 Export Plan as CSV",
         data=csv_export,
