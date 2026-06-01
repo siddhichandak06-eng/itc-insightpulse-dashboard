@@ -69,6 +69,12 @@ if brand_col in df.columns and date_col in df.columns and amount_col in df.colum
         aggfunc='sum'
     ).fillna(0)
     
+# ================================================================
+# FIX: FORCE DATETIMEINDEX & CLEAN RESAMPLING OVERLAPS
+# ================================================================
+    # Ensure the pivot dataframe's index is explicitly treated as Datetime
+    pivot_df.index = pd.to_datetime(pivot_df.index)
+
     # Step 2: Resample based on user timeline choice to smooth out background noise
     pivot_resampled = pivot_df.resample(resample_rule).sum()
     

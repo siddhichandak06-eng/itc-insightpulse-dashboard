@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import warnings
 import numpy as np
 import os
+import base64
 from dotenv import load_dotenv
 load_dotenv() 
 
@@ -90,7 +91,6 @@ html, body, [data-testid="stAppViewContainer"] {{
     color: {COLORS['white']} !important;
 }}
 
-/* Forcing Times New Roman on the Main Title Element */
 h1, 
 h1 span,
 .stHeadingWithAnchor h1,
@@ -229,7 +229,6 @@ p {{
     border-radius: 8px !important;
 }}
 
-/* Navigation Menu Custom Formatting */
 [data-testid="stSidebarNavItems"] div {{
     color: {COLORS['gray']} !important;
     font-size: 0.8rem !important;
@@ -271,64 +270,13 @@ p {{
 """, unsafe_allow_html=True)
 
 # ================================================================
-# DATABASE CONNECTION
+# DATA LOADING & CACHING (Imported from Preprocess Pipeline)
 # ================================================================
-@st.cache_resource
-def init_connection():
-    """Initialize and cache database connection securely"""
-    try:
-        # Fallback defaults provided if environment variables aren't set
-        DB_USER = os.getenv("DB_USER", "root")
-        DB_PASSWORD = os.getenv("DB_PASSWORD", "")  
-        DB_HOST = os.getenv("DB_HOST", "localhost")
-        DB_NAME = os.getenv("DB_NAME", "itc_sales_db")
+from preprocess import get_processed_data
 
-        connection_string = f"mysql+pymysql://{DB_USER}:{urllib.parse.quote_plus(DB_PASSWORD)}@{DB_HOST}/{DB_NAME}"
-        engine = sa.create_engine(connection_string)
-        with engine.connect() as conn:
-            conn.execute(sa.text("SELECT 1"))
-        return engine
-    except Exception as e:
-        st.error(f"❌ Database Connection Error: {str(e)}")
-        st.stop()
-
-# ================================================================
-# DATA LOADING & CACHING
-# ================================================================
-@st.cache_data(ttl=300)
 def load_data():
-    """Load data from MySQL with validation"""
-    try:
-        query = "SELECT * FROM sales_data LIMIT 100000"
-        
-        # 🟢 FIX: Extract engine safely from session state instead of the raw variable
-        current_engine = st.session_state.get('db_engine')
-        if current_engine is None:
-            current_engine = init_connection()
-            
-        df = pd.read_sql(query, current_engine)
-        
-        # Data cleaning
-        if 'Date' in df.columns:
-            df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
-            df = df.dropna(subset=['Date'])
-        
-        # Numeric columns
-        numeric_cols = ['Quantity', 'Total Amount']
-        for col in numeric_cols:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-                df[col] = df[col].fillna(0)
-        
-        # Remove negative values
-        if 'Total Amount' in df.columns and 'Quantity' in df.columns:
-            df = df[(df['Total Amount'] >= 0) & (df['Quantity'] >= 0)]
-        
-        return df.sort_values('Date') if 'Date' in df.columns else df
-    
-    except Exception as e:
-        st.error(f"❌ Data Loading Error: {str(e)}")
-        st.stop()
+    """Cached pipeline streaming node"""
+    return get_processed_data()
 
 @st.cache_data(ttl=300)
 def calculate_kpis(df):
@@ -336,13 +284,16 @@ def calculate_kpis(df):
     if df.empty:
         return {col: 0 for col in ['revenue', 'units', 'transactions', 'avg_order', 'growth', 'density']}
     
+    total_revenue = df['Total Amount'].sum() if 'Total Amount' in df.columns else 0
+    total_transactions = len(df)
+    
     return {
-        'revenue': df['Total Amount'].sum() if 'Total Amount' in df.columns else 0,
+        'revenue': total_revenue,
         'units': df['Quantity'].sum() if 'Quantity' in df.columns else 0,
-        'transactions': len(df),
+        'transactions': total_transactions,
         'avg_order': df['Total Amount'].mean() if 'Total Amount' in df.columns else 0,
         'growth': 0,  
-        'density': df['Total Amount'].sum() / len(df) if len(df) > 0 else 0
+        'density': total_revenue / total_transactions if total_transactions > 0 else 0
     }
 
 def detect_columns(df):
@@ -364,19 +315,11 @@ def detect_columns(df):
     
     return cols
 
-# Load data
+# Load data execution block
 with st.spinner("📊 Loading ITC InsightPulse Sales Data..."):
     df = load_data()
     columns = detect_columns(df)
     all_kpis = calculate_kpis(df)
-
-# Share the raw dataframe globally inside the Session State
-if 'raw_data' not in st.session_state:
-    st.session_state.raw_data = df
-
-# Extract static boundaries for front header display
-min_date_raw = df[columns['date']].min().strftime('%d %b %Y')
-max_date_raw = df[columns['date']].max().strftime('%d %b %Y')
 
 # ================================================================
 # FILTER STATE MANAGER RESET CALLBACK
@@ -392,7 +335,7 @@ def reset_all_filters():
 # MAIN CONTROL ROOM VIEW FUNCTION
 # ================================================================
 def render_main_dashboard():
-    # --- Sidebar Controls (Nested inside the render loop to prevent duplicate key errors) ---
+    # --- Sidebar Controls Layout ---
     st.sidebar.markdown(f"""
     <div style='background: {COLORS["primary_light"]}; padding: 1rem; border-radius: 16px; margin-bottom: 1.5rem;'>
         <h2 style='color: {COLORS["white"]}; margin: 0; font-size: 1.3rem;'>🔍 Filters</h2>
@@ -400,7 +343,7 @@ def render_main_dashboard():
     </div>
     """, unsafe_allow_html=True)
 
-    # Region Filter
+    # Region Filter Setup
     if columns['region'] in df.columns:
         regions = sorted(df[columns['region']].dropna().unique())
         selected_regions = st.sidebar.multiselect(
@@ -412,8 +355,8 @@ def render_main_dashboard():
     else:
         selected_regions = None
         st.sidebar.warning("Region column not found")
-
-    # Brand Filter
+    
+    # Brand Filter Setup
     if columns['brand'] in df.columns:
         brands = sorted(df[columns['brand']].dropna().unique())
         selected_brands = st.sidebar.multiselect(
@@ -426,7 +369,7 @@ def render_main_dashboard():
         selected_brands = None
         st.sidebar.warning("Brand column not found")
 
-    # Product Category Filter
+    # Product Category Filter Setup
     if 'Product Category' in df.columns:
         categories = sorted(df['Product Category'].dropna().unique())
         selected_categories = st.sidebar.multiselect(
@@ -439,11 +382,11 @@ def render_main_dashboard():
         selected_categories = None
         st.sidebar.warning("Product Category column not found")
 
-    # Date Range Filter
+    # Date Range Filter Setup
     st.sidebar.markdown("---")
     if columns['date'] in df.columns:
         min_date = df[columns['date']].min().date()
-        max_date = df[columns['date']].max().date()
+        max_date = df[columns['max_date'] if 'max_date' in df.columns else columns['date']].max().date()
         
         date_range = st.sidebar.date_input(
             "📅 Date Range",
@@ -455,7 +398,7 @@ def render_main_dashboard():
     else:
         date_range = None
 
-    # Reset Filters Button
+    # Reset & Refresh Control Row
     col1, col2 = st.sidebar.columns(2)
     with col1:
         if st.button("🔄 Reset", use_container_width=True, on_click=reset_all_filters):
@@ -466,7 +409,7 @@ def render_main_dashboard():
             st.cache_data.clear()
             st.rerun()
 
-    # Sidebar Info
+    # Sidebar Data Metrics Overview Card
     st.sidebar.markdown("---")
     st.sidebar.markdown(f"""
     <div style='background: {COLORS["primary_medium"]}; padding: 1rem; border-radius: 12px; border: 1px solid {COLORS["primary_light"]};'>
@@ -483,13 +426,14 @@ def render_main_dashboard():
     </div>
     """, unsafe_allow_html=True)
 
-    # --- Apply Filters ---
+    # ================================================================
+    # DATA MUTATION COMPILATION (CRITICALLY REORDERED BELOW SELECTIONS)
+    # ================================================================
     filtered_df = df.copy()
 
-    # We read directly from session_state if available to force instant sync on Reset click
-    sel_reg = st.session_state.get("region_filter", regions)
-    sel_brd = st.session_state.get("brand_filter", brands[:min(5, len(brands))])
-    sel_cat = st.session_state.get("category_filter", categories) if 'Product Category' in df.columns else None
+    sel_reg = st.session_state.get("region_filter", None)
+    sel_brd = st.session_state.get("brand_filter", None)
+    sel_cat = st.session_state.get("category_filter", None)
 
     if sel_reg:
         filtered_df = filtered_df[filtered_df[columns['region']].isin(sel_reg)]
@@ -497,7 +441,7 @@ def render_main_dashboard():
     if sel_brd:
         filtered_df = filtered_df[filtered_df[columns['brand']].isin(sel_brd)]
 
-    if sel_cat:
+    if sel_cat and 'Product Category' in df.columns:
         filtered_df = filtered_df[filtered_df['Product Category'].isin(sel_cat)]
 
     if date_range and len(date_range) == 2 and columns['date'] in df.columns:
@@ -509,29 +453,24 @@ def render_main_dashboard():
     # ================================================================
     # HEADER SECTION WITH LOCAL LOGO ENCODING
     # ================================================================
-    import base64
-
-    # 1. Safely read and encode your local ITC logo file to base64 format
     logo_path = "ITC_Limited_Logo.svg.png"  
-    
     try:
         with open(logo_path, "rb") as image_file:
             encoded_logo = base64.b64encode(image_file.read()).decode()
-        # Create a browser-readable source string
         img_src = f"data:image/png;base64,{encoded_logo}"
     except Exception:
-        # Fallback to a data chart emoji if the path or file is missing
         img_src = None 
 
-    # 2. Render the layout columns (Adjusted sizes so title + logo has more space)
     col_header1, col_header2 = st.columns([5.5, 1.5], gap="medium")
 
     with col_header1:
-        # Build an inline container so the image and text sit side-by-side
         if img_src:
             logo_html = f"<img src='{img_src}' style='height: 55px; vertical-align: middle; margin-right: 15px; margin-bottom: 8px;'>"
         else:
             logo_html = "<span style='font-size: 2.5rem; vertical-align: middle; margin-right: 15px;'>📊</span>"
+
+        display_min_date = date_range[0].strftime('%d-%m-%Y') if date_range else df[columns['date']].min().strftime('%d-%m-%Y')
+        display_max_date = date_range[1].strftime('%d-%m-%Y') if date_range else df[columns['date']].max().strftime('%d-%m-%Y')
 
         st.markdown(f"""
         <div>
@@ -543,9 +482,9 @@ def render_main_dashboard():
             </p>
             <div style='display: inline-block; background: rgba(20, 235, 255, 0.15); border: 1px solid {COLORS["accent2"]}; padding: 0.4rem 1rem; border-radius: 30px;'>
                 <span style='color: white; font-size: 0.95rem; font-weight: 600;'>📅 Analytics Period: </span>
-                <span style='color: {COLORS["accent2"]}; font-size: 0.95rem; font-weight: 700;'>{min_date_raw}</span>
+                <span style='color: {COLORS["accent2"]}; font-size: 0.95rem; font-weight: 700;'>{display_min_date}</span>
                 <span style='color: white; font-size: 0.95rem;'> to </span>
-                <span style='color: {COLORS["accent2"]}; font-size: 0.95rem; font-weight: 700;'>{max_date_raw}</span>
+                <span style='color: {COLORS["accent2"]}; font-size: 0.95rem; font-weight: 700;'>{display_max_date}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -571,30 +510,25 @@ def render_main_dashboard():
     if not filtered_df.empty:
         kpi_metrics = calculate_kpis(filtered_df)
         
-        # Row 1
         kpi1, kpi2, kpi3, kpi4 = st.columns(4, gap="medium")
-        
         with kpi1:
             st.metric(
                 label="💰 Total Revenue",
                 value=f"₹{kpi_metrics['revenue']/1e6:.2f}M" if kpi_metrics['revenue'] >= 1e6 else f"₹{kpi_metrics['revenue']/1e3:.0f}K",
                 delta=f"{len(filtered_df):,} transactions"
             )
-        
         with kpi2:
             st.metric(
                 label="📦 Units Sold",
                 value=f"{kpi_metrics['units']:,.0f}",
                 delta=f"Avg: {kpi_metrics['units']/max(len(filtered_df), 1):.0f}/txn"
             )
-        
         with kpi3:
             st.metric(
                 label="🛒 Avg Order Value",
                 value=f"₹{kpi_metrics['avg_order']:,.0f}",
                 delta="Per transaction"
             )
-        
         with kpi4:
             st.metric(
                 label="📊 Sales Density",
@@ -602,18 +536,9 @@ def render_main_dashboard():
                 delta="Revenue per order"
             )
         
-        # Row 2
         kpi5, kpi6, kpi7, kpi8 = st.columns(4, gap="medium")
-        
-        if columns['brand'] in filtered_df.columns:
-            top_brand = filtered_df.groupby(columns['brand'])['Total Amount'].sum().idxmax()
-        else:
-            top_brand = "N/A"
-        
-        if columns['region'] in filtered_df.columns:
-            top_region = filtered_df.groupby(columns['region'])['Total Amount'].sum().idxmax()
-        else:
-            top_region = "N/A"
+        top_brand = filtered_df.groupby(columns['brand'])['Total Amount'].sum().idxmax() if columns['brand'] in filtered_df.columns and not filtered_df.empty else "N/A"
+        top_region = filtered_df.groupby(columns['region'])['Total Amount'].sum().idxmax() if columns['region'] in filtered_df.columns and not filtered_df.empty else "N/A"
         
         with kpi5:
             st.metric(
@@ -621,14 +546,12 @@ def render_main_dashboard():
                 value=str(top_brand)[:15],
                 delta="Highest revenue"
             )
-        
         with kpi6:
             st.metric(
                 label="🌍 Top Region",
                 value=str(top_region)[:15],
                 delta="Best performing"
             )
-        
         with kpi7:
             distributor_count = filtered_df[columns['distributor']].nunique() if columns['distributor'] in filtered_df.columns else 0
             st.metric(
@@ -636,7 +559,6 @@ def render_main_dashboard():
                 value=f"{distributor_count}",
                 delta="Partners"
             )
-        
         with kpi8:
             st.metric(
                 label="⏱️ Date Range",
@@ -651,7 +573,6 @@ def render_main_dashboard():
         # ================================================================
         st.markdown("## 📈 Sales Analytics")
         
-        # Chart 1: Revenue Trend
         st.markdown(f"""
         <div class="analytics-box">
             <h3 style='color: {COLORS["accent1"]}; margin: 0 0 1.5rem 0;'>Daily Revenue Trend</h3>
@@ -683,13 +604,10 @@ def render_main_dashboard():
             yaxis=dict(showgrid=True, gridcolor=COLORS['primary_light']),
             legend=dict(y=1.1, x=0)
         )
-        
         st.plotly_chart(fig_trend, use_container_width=True, config={'responsive': True})
         st.markdown("</div>", unsafe_allow_html=True)
         
-        # Charts 2 & 3: Region & Brand
         col_chart1, col_chart2 = st.columns(2, gap="medium")
-        
         with col_chart1:
             st.markdown(f"""
             <div class="analytics-box">
@@ -698,7 +616,6 @@ def render_main_dashboard():
             
             if columns['region'] in filtered_df.columns:
                 region_data = filtered_df.groupby(columns['region'])['Total Amount'].sum().sort_values()
-                
                 fig_region = go.Figure(data=[
                     go.Bar(
                         y=region_data.index,
@@ -714,7 +631,6 @@ def render_main_dashboard():
                         hovertemplate='<b>%{y}</b><br>₹%{x:,.0f}<extra></extra>'
                     )
                 ])
-                
                 fig_region.update_layout(
                     height=400,
                     margin=dict(l=0, r=0, t=0, b=0),
@@ -724,9 +640,7 @@ def render_main_dashboard():
                     xaxis_title='',
                     yaxis_title=''
                 )
-                
                 st.plotly_chart(fig_region, use_container_width=True, config={'responsive': True})
-            
             st.markdown("</div>", unsafe_allow_html=True)
         
         with col_chart2:
@@ -737,7 +651,6 @@ def render_main_dashboard():
             
             if columns['brand'] in filtered_df.columns:
                 brand_data = filtered_df.groupby(columns['brand'])['Total Amount'].sum()
-                
                 fig_brand = go.Figure(data=[
                     go.Pie(
                         labels=brand_data.index,
@@ -749,7 +662,6 @@ def render_main_dashboard():
                         hovertemplate='<b>%{label}</b><br>₹%{value:,.0f}<extra></extra>'
                     )
                 ])
-                
                 fig_brand.update_layout(
                     height=400,
                     margin=dict(l=0, r=0, t=0, b=0),
@@ -757,12 +669,9 @@ def render_main_dashboard():
                     paper_bgcolor='rgba(0,0,0,0)',
                     font=dict(color=COLORS['white'])
                 )
-                
                 st.plotly_chart(fig_brand, use_container_width=True, config={'responsive': True})
-            
             st.markdown("</div>", unsafe_allow_html=True)
         
-        # Chart 4: Top Distributors
         st.markdown(f"""
         <div class="analytics-box">
             <h3 style='color: {COLORS["accent1"]}; margin: 0 0 1.5rem 0;'>Top Distributors</h3>
@@ -770,7 +679,6 @@ def render_main_dashboard():
         
         if columns['distributor'] in filtered_df.columns:
             top_distributors = filtered_df.groupby(columns['distributor'])['Total Amount'].sum().nlargest(10).sort_values()
-            
             fig_dist = go.Figure(data=[
                 go.Bar(
                     y=top_distributors.index,
@@ -786,7 +694,6 @@ def render_main_dashboard():
                     hovertemplate='<b>%{y}</b><br>₹%{x:,.0f}<extra></extra>'
                 )
             ])
-            
             fig_dist.update_layout(
                 height=350,
                 margin=dict(l=0, r=0, t=0, b=0),
@@ -796,9 +703,7 @@ def render_main_dashboard():
                 xaxis_title='',
                 yaxis_title=''
             )
-            
             st.plotly_chart(fig_dist, use_container_width=True, config={'responsive': True})
-        
         st.markdown("</div>", unsafe_allow_html=True)
         
         # ================================================================
@@ -818,7 +723,7 @@ def render_main_dashboard():
             """, unsafe_allow_html=True)
             
             display_cols = [col for col in [columns['date'], columns['region'], columns['brand'], 
-                                           columns['quantity'], columns['amount']] 
+                                           'Product Name', columns['quantity'], columns['amount']] 
                            if col in filtered_df.columns]
             
             display_df = filtered_df[display_cols].copy()
@@ -844,7 +749,6 @@ def render_main_dashboard():
             """, unsafe_allow_html=True)
             
             stat_col1, stat_col2, stat_col3 = st.columns(3)
-            
             with stat_col1:
                 st.markdown(f"**Revenue Statistics**")
                 st.write(f"Max: ₹{filtered_df[columns['amount']].max():,.2f}")
@@ -898,7 +802,6 @@ def render_main_dashboard():
                     barmode='group',
                     color_discrete_sequence=[COLORS['accent1'], COLORS['accent2']]
                 )
-                
                 fig_comp.update_layout(
                     height=450,
                     plot_bgcolor='rgba(0,0,0,0)',
@@ -906,7 +809,6 @@ def render_main_dashboard():
                     font=dict(color=COLORS['white']),
                     legend=dict(y=1.1)
                 )
-                
                 st.plotly_chart(fig_comp, use_container_width=True)
 
     else:
@@ -940,7 +842,6 @@ def render_main_dashboard():
 # ================================================================
 # CORE SYSTEM MULTI-PAGE LAYOUT ROUTER (With Custom Brand Files)
 # ================================================================
-# 1. Main Dashboard Target Setup
 main_dashboard = st.Page(
     render_main_dashboard, 
     title="Master Sales Control Room", 
@@ -948,7 +849,6 @@ main_dashboard = st.Page(
     default=True
 )
 
-# 2. Strategic Lab Targets Setup (Points directly to your core tool files)
 planning_hub = st.Page(
     "pages/planning_hub.py", 
     title="Business Planning Hub", 
@@ -961,34 +861,25 @@ fund_allocator = st.Page(
     icon="💰"
 )
 
-brand_correlation= st.Page(
+brand_correlation = st.Page(
     "pages/brand_correlation.py", 
     title="Brand Correlation", 
     icon="🏷️"
 )
 
-# 3. Dynamic Loop to find your custom individual brand files
 brand_diagnostic_pages = []
-
 if os.path.exists("pages"):
     for file in sorted(os.listdir("pages")):
-        # Only look for python files, and ignore our main utility pages
         if file.endswith(".py") and file not in ["planning_hub.py", "fund_allocator.py", "brand_correlation.py"]:
             page_path = f"pages/{file}"
-            
-            # Clean up the filename to make a pretty title (e.g., 'fiama_di_wills.py' -> 'Fiama Di Wills')
             clean_title = file.replace(".py", "").replace("_", " ").title()
-            
-            # Create the page object and add it to our list
             brand_page = st.Page(page_path, title=clean_title, icon="🏷️")
             brand_diagnostic_pages.append(brand_page)
 
-# 4. Bind all modules into clean navigation dropdown categories
 navigation_ecosystem = st.navigation({
     "Executive Control Room": [main_dashboard],
     "Strategic Analysis Labs": [planning_hub, fund_allocator, brand_correlation],
     "Brand Diagnostics Suite": brand_diagnostic_pages
 })
 
-# Run the unified router app
 navigation_ecosystem.run()
