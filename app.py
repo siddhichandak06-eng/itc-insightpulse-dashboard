@@ -156,7 +156,7 @@ def inject_custom_css():
 inject_custom_css()
 
 # ================================================================
-# DATA LOADING & CACHING (Imported from Preprocess Pipeline)
+# DATA LOADING & CACHING (from preprocess.py)
 # ================================================================
 from preprocess import get_processed_data
 
@@ -269,9 +269,7 @@ def render_main_dashboard():
         selected_categories = None
         st.sidebar.warning("Product Category column not found")
 
-    # ================================================================
-    # NEW MULTI-CHANNEL FILTER INTEGRATION
-    # ================================================================
+    # Channel Filter Setup
     if 'Channel' in df.columns:
         channels = sorted(df['Channel'].dropna().unique())
         selected_channels = st.sidebar.multiselect(
@@ -328,13 +326,14 @@ def render_main_dashboard():
     """, unsafe_allow_html=True)
 
     # ================================================================
-    # DATA MUTATION COMPILATION (CRITICALLY REORDERED BELOW SELECTIONS)
+    # DATA MUTATION COMPILATION
     # ================================================================
     filtered_df = df.copy()
 
     sel_reg = st.session_state.get("region_filter", None)
     sel_brd = st.session_state.get("brand_filter", None)
     sel_cat = st.session_state.get("category_filter", None)
+    sel_chn = st.session_state.get("channel_filter", None)
 
     if sel_reg:
         filtered_df = filtered_df[filtered_df[columns['region']].isin(sel_reg)]
@@ -344,8 +343,7 @@ def render_main_dashboard():
 
     if sel_cat and 'Product Category' in df.columns:
         filtered_df = filtered_df[filtered_df['Product Category'].isin(sel_cat)]
-
-    sel_chn = st.session_state.get("channel_filter", None)
+    
     if sel_chn and 'Channel' in df.columns:
         filtered_df = filtered_df[filtered_df['Channel'].isin(sel_chn)]
 
@@ -611,8 +609,6 @@ def render_main_dashboard():
             st.plotly_chart(fig_dist, use_container_width=True, config={'responsive': True})
         st.markdown("</div>", unsafe_allow_html=True)
         
-    
-
         # ================================================================
         # DETAILED ANALYSIS TABS
         # ================================================================
@@ -629,7 +625,6 @@ def render_main_dashboard():
             </div>
             """, unsafe_allow_html=True)
             
-            # UPDATED: Added 'Channel' into the display column checker array
             display_cols = [col for col in [columns['date'], columns['region'], columns['brand'], 
                                            'Product Name', 'Channel', columns['quantity'], columns['amount']] 
                            if col in filtered_df.columns]
@@ -680,6 +675,7 @@ def render_main_dashboard():
                     st.write(f"Brands: {filtered_df[columns['brand']].nunique()}")
                 if columns['distributor'] in filtered_df.columns:
                     st.write(f"Distributors: {filtered_df[columns['distributor']].nunique()}")
+                
         
         with tab3:
             st.markdown(f"""
