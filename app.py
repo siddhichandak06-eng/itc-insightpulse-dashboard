@@ -56,218 +56,104 @@ if 'COLORS' not in st.session_state:
 # ================================================================
 # CUSTOM CSS STYLING
 # ================================================================
-st.markdown(f"""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+def inject_custom_css():
+    st.markdown(f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-* {{
-    font-family: 'Inter', sans-serif;
-}}
+    * {{ font-family: 'Inter', sans-serif; }}
+    html, body, [data-testid="stAppViewContainer"] {{
+        background: linear-gradient(135deg, #000000 0%, #0a1f44 50%, #001f54 100%);
+        background-attachment: fixed;
+    }}
+    [data-testid="stMain"] {{ background: transparent; padding-top: 2rem; }}
+    [data-testid="stSidebar"] {{
+        background: linear-gradient(135deg, {COLORS['primary']} 0%, {COLORS['dark_primary']} 100%);
+        border-right: 1px solid {COLORS['primary_light']};
+    }}
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"], 
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] .stMarkdown {{
+        color: {COLORS['white']} !important;
+    }}
+    h1, h1 span, .stHeadingWithAnchor h1, [data-testid="stMarkdownContainer"] h1, [data-testid="stMain"] h1 {{
+        font-family: 'Times New Roman', Times, Baskerville, Georgia, serif !important;
+        font-weight: 800 !important;
+        font-size: 2.6rem !important;
+        letter-spacing: 0.02em !important;
+        background: linear-gradient(135deg, {COLORS['primary']}, {COLORS['accent2']}) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        color: transparent !important;
+    }}
+    h2 {{ color: {COLORS['white']} !important; font-weight: 700 !important; font-size: 1.8rem !important; }}
+    h3 {{ color: {COLORS['accent1']} !important; font-weight: 600 !important; }}
+    p {{ color: {COLORS['white']} !important; }}
+    
+    /* --- METRIC CARD DEEP CONTAINER FIX --- */
+    .stMetric {{
+        background: rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: blur(20px) !important;
+        border-radius: 16px !important;
+        border: 1px solid {COLORS['primary_medium']} !important;
+        padding: 1.2rem !important;
+        box-shadow: 0 20px 40px {COLORS['primary_light']};
+        transition: all 0.3s ease !important;
+    }}
+    .stMetric:hover {{
+        transform: translateY(-3px) !important;
+        box-shadow: 0 30px 60px {COLORS['primary_medium']};
+        border-color: {COLORS['accent1']} !important;
+    }}
+    
+    /* CRITICAL UI RESTORATION: Breaks default Streamlit text-clipping behavior across all layout depths */
+    [data-testid="stMetricValue"],
+    [data-testid="stMetricValue"] > div,
+    [data-testid="stMetric"] div,
+    [data-testid="stMetric"] span {{
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        word-break: break-word !important;
+        line-height: 1.3 !important;
+    }}
+    
+    [data-testid="stMetricValue"] {{
+        font-size: 1.35rem !important; 
+        font-weight: 700 !important;
+    }}
+    
+    .analytics-box {{
+        background: rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: blur(20px) !important;
+        border-radius: 20px !important;
+        border: 1px solid {COLORS['primary_medium']} !important;
+        padding: 2rem !important;
+        margin: 1.5rem 0 !important;
+        box-shadow: 0 20px 40px {COLORS['primary_light']};
+        transition: all 0.3s ease !important;
+        position: relative;
+    }}
+    .analytics-box::before {{
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+        background: linear-gradient(90deg, {COLORS['primary']}, {COLORS['accent1']}, {COLORS['accent2']});
+        border-radius: 20px 20px 0 0;
+    }}
+    .stButton > button {{
+        background: linear-gradient(135deg, {COLORS['primary']}, {COLORS['accent1']}) !important;
+        color: {COLORS['white']} !important;
+        border: none !important; border-radius: 10px !important; padding: 12px 28px !important;
+        font-weight: 600 !important; transition: all 0.3s ease !important;
+    }}
+    [data-testid="stSelectbox"] [role="button"], [data-testid="stMultiSelect"] [role="button"] {{
+        background: rgba(20, 121, 255, 0.1) !important;
+        border: 1px solid {COLORS['primary_medium']} !important;
+        color: {COLORS['white']} !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
-html, body, [data-testid="stAppViewContainer"] {{
-    background: linear-gradient(135deg, #000000 0%, #0a1f44 50%, #001f54 100%);
-    background-attachment: fixed;
-}}
-
-[data-testid="stMain"] {{
-    background: transparent;
-    padding-top: 2rem;
-}}
-
-[data-testid="stSidebar"] {{
-    background: linear-gradient(135deg, {COLORS['primary']} 0%, {COLORS['dark_primary']} 100%);
-    border-right: 1px solid {COLORS['primary_light']};
-}}
-
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {{
-    color: {COLORS['white']} !important;
-}}
-
-[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {{
-    color: {COLORS['white']} !important;
-}}
-
-[data-testid="stSidebar"] .stMarkdown {{
-    color: {COLORS['white']} !important;
-}}
-
-h1, 
-h1 span,
-.stHeadingWithAnchor h1,
-[data-testid="stMarkdownContainer"] h1,
-[data-testid="stMain"] h1 {{
-    font-family: 'Times New Roman', Times, Baskerville, Georgia, serif !important;
-    font-weight: 800 !important;
-    font-size: 2.8rem !important;
-    letter-spacing: 0.02em !important;
-    background: linear-gradient(135deg, {COLORS['primary']}, {COLORS['accent2']}) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
-    color: transparent !important;
-}}
-
-h2 {{
-    color: {COLORS['white']} !important;
-    font-weight: 700 !important;
-    font-size: 1.8rem !important;
-}}
-
-h3 {{
-    color: {COLORS['accent1']} !important;
-    font-weight: 600 !important;
-}}
-
-p {{
-    color: {COLORS['white']} !important;
-}}
-
-.stMetric {{
-    background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(20px) !important;
-    border-radius: 16px !important;
-    border: 1px solid {COLORS['primary_medium']} !important;
-    padding: 1.5rem !important;
-    box-shadow: 0 20px 40px {COLORS['primary_light']};
-    transition: all 0.3s ease !important;
-}}
-
-.stMetric:hover {{
-    transform: translateY(-5px) !important;
-    box-shadow: 0 30px 60px {COLORS['primary_medium']};
-    border-color: {COLORS['accent1']} !important;
-}}
-
-.analytics-box {{
-    background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(20px) !important;
-    border-radius: 20px !important;
-    border: 1px solid {COLORS['primary_medium']} !important;
-    padding: 2rem !important;
-    margin: 1.5rem 0 !important;
-    box-shadow: 0 20px 40px {COLORS['primary_light']};
-    transition: all 0.3s ease !important;
-    position: relative;
-}}
-
-.analytics-box::before {{
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, {COLORS['primary']}, {COLORS['accent1']}, {COLORS['accent2']});
-    border-radius: 20px 20px 0 0;
-}}
-
-.analytics-box:hover {{
-    transform: translateY(-5px) !important;
-    box-shadow: 0 30px 60px {COLORS['primary_medium']};
-    border-color: {COLORS['accent1']} !important;
-}}
-
-.stButton > button {{
-    background: linear-gradient(135deg, {COLORS['primary']}, {COLORS['accent1']}) !important;
-    color: {COLORS['white']} !important;
-    border: none !important;
-    border-radius: 10px !important;
-    padding: 12px 28px !important;
-    font-weight: 600 !important;
-    transition: all 0.3s ease !important;
-    box-shadow: 0 8px 24px {COLORS['primary_light']};
-}}
-
-.stButton > button:hover {{
-    transform: translateY(-2px) !important;
-    box-shadow: 0 12px 32px {COLORS['primary_medium']};
-}}
-
-[data-testid="stTabs"] [role="tablist"] {{
-    border-bottom: 2px solid {COLORS['primary_light']} !important;
-}}
-
-[data-testid="stTabs"] [role="tab"] {{
-    color: {COLORS['white']} !important;
-    border-bottom: 3px solid transparent !important;
-    font-weight: 600 !important;
-    transition: all 0.3s ease !important;
-}}
-
-[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
-    color: {COLORS['accent1']} !important;
-    border-bottom-color: {COLORS['accent1']} !important;
-}}
-
-.stDataFrame {{
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid {COLORS['primary_light']} !important;
-    border-radius: 12px !important;
-}}
-
-.streamlit-expanderHeader {{
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid {COLORS['primary_light']} !important;
-    border-radius: 10px !important;
-}}
-
-.streamlit-expanderHeader p {{
-    color: {COLORS['white']} !important;
-    font-weight: 600 !important;
-}}
-
-.stSelectbox label, .stMultiSelect label, .stDateInput label {{
-    color: {COLORS['white']} !important;
-    font-weight: 600 !important;
-}}
-
-[data-testid="stSelectbox"] [role="button"],
-[data-testid="stMultiSelect"] [role="button"] {{
-    background: rgba(20, 121, 255, 0.1) !important;
-    border: 1px solid {COLORS['primary_medium']} !important;
-    color: {COLORS['white']} !important;
-    border-radius: 8px !important;
-}}
-
-[data-testid="stSidebarNavItems"] div {{
-    color: {COLORS['gray']} !important;
-    font-size: 0.8rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.1rem !important;
-    text-transform: uppercase !important;
-    margin-top: 1rem !important;
-    margin-bottom: 0.25rem !important;
-    padding-left: 0.5rem !important;
-}}
-
-[data-testid="stSidebarNavItems"] a {{
-    background: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid rgba(20, 121, 255, 0.1) !important;
-    border-radius: 8px !important;
-    margin: 0.3rem 0 !important;
-    padding: 0.5rem 0.75rem !important;
-    transition: all 0.3s ease !important;
-}}
-
-[data-testid="stSidebarNavItems"] a:hover {{
-    background: {COLORS['primary_light']} !important;
-    border-color: {COLORS['accent1']} !important;
-    transform: translateX(4px);
-}}
-
-[data-testid="stSidebarNavItems"] a[aria-current="page"] {{
-    background: linear-gradient(90deg, {COLORS['primary_medium']}, transparent) !important;
-    border-left: 4px solid {COLORS['accent1']} !important;
-    border-color: {COLORS['primary_medium']} !important;
-}}
-
-[data-testid="stSidebarNavItems"] a span {{
-    color: {COLORS['white']} !important;
-    font-weight: 500 !important;
-    font-size: 0.95rem !important;
-}}
-</style>
-""", unsafe_allow_html=True)
+inject_custom_css()
 
 # ================================================================
 # DATA LOADING & CACHING (Imported from Preprocess Pipeline)
@@ -318,6 +204,7 @@ def detect_columns(df):
 # Load data execution block
 with st.spinner("📊 Loading ITC InsightPulse Sales Data..."):
     df = load_data()
+    st.session_state['raw_data'] = df  
     columns = detect_columns(df)
     all_kpis = calculate_kpis(df)
 
