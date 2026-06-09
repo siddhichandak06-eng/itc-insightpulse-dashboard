@@ -269,6 +269,20 @@ def render_main_dashboard():
         selected_categories = None
         st.sidebar.warning("Product Category column not found")
 
+    # ================================================================
+    # NEW MULTI-CHANNEL FILTER INTEGRATION
+    # ================================================================
+    if 'Channel' in df.columns:
+        channels = sorted(df['Channel'].dropna().unique())
+        selected_channels = st.sidebar.multiselect(
+            "🛒 Sales Channels",
+            options=channels,
+            default=channels,
+            key="channel_filter"
+        )
+    else:
+        selected_channels = None
+
     # Date Range Filter Setup
     st.sidebar.markdown("---")
     if columns['date'] in df.columns:
@@ -330,6 +344,10 @@ def render_main_dashboard():
 
     if sel_cat and 'Product Category' in df.columns:
         filtered_df = filtered_df[filtered_df['Product Category'].isin(sel_cat)]
+
+    sel_chn = st.session_state.get("channel_filter", None)
+    if sel_chn and 'Channel' in df.columns:
+        filtered_df = filtered_df[filtered_df['Channel'].isin(sel_chn)]
 
     if date_range and len(date_range) == 2 and columns['date'] in df.columns:
         filtered_df = filtered_df[
@@ -593,6 +611,8 @@ def render_main_dashboard():
             st.plotly_chart(fig_dist, use_container_width=True, config={'responsive': True})
         st.markdown("</div>", unsafe_allow_html=True)
         
+    
+
         # ================================================================
         # DETAILED ANALYSIS TABS
         # ================================================================
@@ -609,8 +629,9 @@ def render_main_dashboard():
             </div>
             """, unsafe_allow_html=True)
             
+            # UPDATED: Added 'Channel' into the display column checker array
             display_cols = [col for col in [columns['date'], columns['region'], columns['brand'], 
-                                           'Product Name', columns['quantity'], columns['amount']] 
+                                           'Product Name', 'Channel', columns['quantity'], columns['amount']] 
                            if col in filtered_df.columns]
             
             display_df = filtered_df[display_cols].copy()

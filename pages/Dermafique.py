@@ -40,7 +40,7 @@ brand_df = df[df['Brand'] == BRAND_NAME]
 
 # --- UI Header ---
 st.markdown(f"<h1>{BRAND_NAME} Performance Dashboard</h1>", unsafe_allow_html=True)
-st.markdown(f"<p style='color: {COLORS['accent1']}; font-size: 1.1rem;'>Dedicated Performance Insights & Diagnostic Metrics Suite</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='color: {COLORS['accent1']}; font-size: 1.1rem;'>Dedicated Channel Performance Insights & Metrics Suite</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 if not brand_df.empty:
@@ -71,7 +71,59 @@ if not brand_df.empty:
     with m3:
         st.metric(label="Average Order Value", value=f"₹{avg_txn:,.2f}")
     with m4:
-        st.metric(label="🏆 #1 Top Selling Product", value=str(best_product_name), delta=f"Makes up {share_pct:.1f}% of Sales")
+        st.metric(label="🏆 Top Selling Product", value=str(best_product_name), delta=f"Makes up {share_pct:.1f}% of Sales")
+
+    # ================================================================
+    # NEW ELEMENT: BRAND PERFORMANCE BY SALES CHANNEL
+    # ================================================================
+    st.markdown('<div class="analytics-box">', unsafe_allow_html=True)
+    st.markdown(f"<h3>🛒 Channel Sales Performance Breakdown</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='opacity:0.8; font-size:0.95rem;'>See exactly which store type or online method is generating the most profit for <strong>" + BRAND_NAME + "</strong>.</p>", unsafe_allow_html=True)
+    
+    if 'Channel' in brand_df.columns:
+        # Group and summarize sales by channel
+        channel_summary = brand_df.groupby('Channel')['Total Amount'].sum().reset_index().sort_values(by='Total Amount', ascending=False)
+        
+        # Build the channel bar chart
+        fig_channel_bar = px.bar(
+            channel_summary,
+            x='Total Amount',
+            y='Channel',
+            orientation='h',
+            color='Total Amount',
+            color_continuous_scale=[COLORS['primary'], COLORS['accent2']],
+            labels={'Total Amount': 'Total Sales Amount (₹)', 'Channel': 'Sales Channel'},
+            title=None
+        )
+        fig_channel_bar.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font_color='white', height=250,
+            margin=dict(l=10, r=10, t=10, b=10),
+            coloraxis_showscale=False
+        )
+        st.plotly_chart(fig_channel_bar, use_container_width=True)
+        
+        # Identify the winning channel programmatically to generate an easy action plan
+        top_channel = channel_summary.iloc[0]['Channel']
+        
+        # Tailor actionable suggestions based on plain business logic rules
+        if "E-Commerce" in top_channel:
+            action_text = f"Customers prefer buying <strong>{BRAND_NAME}</strong> online! To increase sales even more, launch targeted social media ads, run lightning deals on Amazon, and offer attractive 'Subscribe & Save' monthly delivery bundles."
+        elif "Merchandising" in top_channel:
+            action_text = f"Premium retail shoppers are buying <strong>{BRAND_NAME}</strong> at giant retail stores like Shoppers Stop! Boost sales by setting up eye-catching end-cap displays, hiring beauty/product advisors to assist walk-in customers, and offering free gift pouches with premium purchases."
+        else:
+            action_text = f"Local neighborhood shops (Traditional Trade) are moving massive quantities of <strong>{BRAND_NAME}</strong>! Increase your distribution footprints by offering wholesale tier discounts to local distributors and launching scratch-card incentive schemes for small shopkeepers."
+            
+        st.markdown(f"""
+        <div style='background: rgba(20, 121, 255, 0.1); border: 1px dashed {COLORS['accent1']}; padding: 14px; border-radius: 8px; margin-top: 10px;'>
+            <span style='color: {COLORS['accent2']}; font-weight: 700;'>🚀 #1 Best Channel: {top_channel}</span> 
+            <br>
+            <p style='margin: 5px 0 0 0; font-size: 0.95rem;'>{action_text}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.caption("Channel data columns missing from database schema maps.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # ================================================================
     # SMART SHOPPING CART BUNDLE SUGGESTER (LAYMAN FRIENDLY)
@@ -163,7 +215,7 @@ if not brand_df.empty:
 
     # --- Top Distributors Plot ---
     st.markdown('<div class="analytics-box">', unsafe_allow_html=True)
-    st.markdown("<h3>Top 5 Sellers / Wholesalers</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>Top Distributors</h3>", unsafe_allow_html=True)
     if 'Distributor' in brand_df.columns:
         dist_summary = brand_df.groupby('Distributor')['Total Amount'].sum().nlargest(5).reset_index()
         fig_dist = px.bar(dist_summary, x='Total Amount', y='Distributor', orientation='h', color='Total Amount',
