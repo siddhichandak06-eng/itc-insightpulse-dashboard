@@ -19,7 +19,8 @@ def init_connection():
     """Initialize database connection safely"""
     try:
         DB_USER = os.getenv("DB_USER", "root")
-        DB_PASSWORD = os.getenv("DB_PASSWORD", "siddhi@06")  
+        # FIXED: XAMPP default MySQL root password is empty string ""
+        DB_PASSWORD = os.getenv("DB_PASSWORD", "")  
         DB_HOST = os.getenv("DB_HOST", "localhost")
         DB_NAME = os.getenv("DB_NAME", "itc_sales_db")
 

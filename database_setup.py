@@ -6,7 +6,7 @@ import numpy as np
 
 # --- CONFIGURATION ---
 DB_USER = "root"
-DB_PASSWORD = "siddhi@06"
+DB_PASSWORD = ""  # FIXED: Set to empty for XAMPP
 DB_HOST = "localhost"
 DB_NAME = "itc_sales_db"
 TABLE_NAME = "sales_data"
