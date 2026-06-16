@@ -15,7 +15,6 @@ load_dotenv()
 
 warnings.filterwarnings("ignore")
 
-
 # ================================================================
 # PAGE CONFIG
 # ================================================================
@@ -741,7 +740,6 @@ def render_main_dashboard():
         </div>
     </div>
     """, unsafe_allow_html=True)
-
 
 # ================================================================
 # CORE SYSTEM MULTI-PAGE LAYOUT ROUTER (With Custom Brand Files)
