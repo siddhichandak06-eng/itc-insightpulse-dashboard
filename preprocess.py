@@ -18,11 +18,10 @@ load_dotenv()
 def init_connection():
     """Initialize database connection safely"""
     try:
-        DB_USER = os.getenv("DB_USER", "root")
-        # FIXED: XAMPP default MySQL root password is empty string ""
-        DB_PASSWORD = os.getenv("DB_PASSWORD", "")  
-        DB_HOST = os.getenv("DB_HOST", "localhost")
-        DB_NAME = os.getenv("DB_NAME", "itc_sales_db")
+        DB_USER = "root"
+        DB_PASSWORD = ""      # XAMPP default is blank
+        DB_HOST = "localhost"  # Back to default 3306 (drop the :3307)
+        DB_NAME = "itc_sales_db"
 
         connection_string = f"mysql+pymysql://{DB_USER}:{urllib.parse.quote_plus(DB_PASSWORD)}@{DB_HOST}/{DB_NAME}"
         engine = sa.create_engine(connection_string)

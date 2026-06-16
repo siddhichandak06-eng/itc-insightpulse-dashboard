@@ -138,7 +138,7 @@ if not brand_df.empty:
             
         st.markdown(f\"\"\"
         <div style='background: rgba(20, 121, 255, 0.1); border: 1px dashed {COLORS['accent1']}; padding: 14px; border-radius: 8px; margin-top: 10px;'>
-            <span style='color: {COLORS['accent2']}; font-weight: 700;'>🚀 #1 Best Channel: {top_channel}</span> 
+            <span style='color: {COLORS['accent2']}; font-weight: 700;'>🚀 Best Channel: {top_channel}</span> 
             <br>
             <p style='margin: 5px 0 0 0; font-size: 0.95rem;'>{action_text}</p>
         </div>
@@ -148,7 +148,7 @@ if not brand_df.empty:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # ================================================================
-    # SMART SHOPPING CART BUNDLE SUGGESTER (LAYMAN FRIENDLY)
+    # SMART SHOPPING CART BUNDLE SUGGESTER 
     # ================================================================
     st.markdown('<div class="analytics-box">', unsafe_allow_html=True)
     st.markdown(f"<h3>🔮 Smart Shopping Cart Bundle Suggester</h3>", unsafe_allow_html=True)

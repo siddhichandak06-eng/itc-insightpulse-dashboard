@@ -6,20 +6,21 @@ import numpy as np
 
 # --- CONFIGURATION ---
 DB_USER = "root"
-DB_PASSWORD = ""  # FIXED: Set to empty for XAMPP
-DB_HOST = "localhost"
+DB_PASSWORD = ""      # Blank for XAMPP
+DB_HOST = "localhost"  # Default port 3306
 DB_NAME = "itc_sales_db"
 TABLE_NAME = "sales_data"
-CSV_FILE = "itc_pcpb_refined_sales.csv"
+# FIXED: Added the missing CSV file path variable right here
+CSV_FILE = "itc_pcpb_refined_sales.csv" 
 
 def setup_database():
     try:
-        # 1. Connect to MySQL Server and create database if needed
+        # 1. Connect to XAMPP MySQL Server on default Port 3306
         print("Connecting to MySQL Server...")
         temp_conn = mysql.connector.connect(
-            host=DB_HOST,
-            user=DB_USER,
-            password=DB_PASSWORD
+            host="localhost",
+            user=DB_USER,         # Uses 'root'
+            password=DB_PASSWORD  # Uses empty string "" for XAMPP
         )
         cursor = temp_conn.cursor()
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_NAME}")
@@ -36,7 +37,7 @@ def setup_database():
         df['Total Amount'] = pd.to_numeric(df['Total Amount'], errors='coerce').fillna(0)
 
         # ================================================================
-        # HIGH-PERFORMANCE FEATURE INTEGRATION (UPDATING THE TABLE DATA)
+        # HIGH-PERFORMANCE FEATURE INTEGRATION 
         # ================================================================
         print("⚙️ Enhancing dataset with product profiles and sales channels...")
         np.random.seed(101)
@@ -155,3 +156,4 @@ def setup_database():
 
 if __name__ == "__main__":
     setup_database()
+    
