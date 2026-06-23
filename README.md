@@ -3,7 +3,7 @@
 ITC InsightPulse is a Business Intelligence (BI) and analytics platform developed for the *ITC Limited – Personal Care Products Business (PCPB) Division*.
 The project combines **sales reporting, forecasting, inventory monitoring, and customer transaction simulation** into a single multi-page application using a **3-layer architecture (Frontend → API → Database)**.
 
-## 📌 Features
+## Features
 
 *Executive Dashboard*
 * Interactive sales analytics and KPI monitoring
