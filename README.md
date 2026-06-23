@@ -1,72 +1,110 @@
-📊 ITC InsightPulse
+# ITC InsightPulse – Interactive Sales Analytics & Intelligence Dashboard
 
-ITC InsightPulse is a premium, enterprise-grade analytics platform built for the ITC Personal Care Products Business (PCPB) division. Designed with a sleek dark-themed interface and powered by advanced forecasting intelligence, the platform delivers actionable business insights across sales, inventory, brand performance, and strategic fund allocation.
+ITC InsightPulse is a Business Intelligence (BI) and analytics platform developed for the *ITC Limited – Personal Care Products Business (PCPB) Division*.
+The project combines **sales reporting, forecasting, inventory monitoring, and customer transaction simulation** into a single multi-page application using a **3-layer architecture (Frontend → API → Database)**.
 
-The application combines executive visualization, predictive analytics, and financial optimization into a unified multi-page Streamlit ecosystem tailored for modern FMCG decision-making.
+## 📌 Features
 
-✨ Overview
+*Executive Dashboard*
+* Interactive sales analytics and KPI monitoring
+* Revenue, order volume, and Average Order Value (AOV) tracking
+* Dynamic filtering by brand, region, category, and time period
+* Interactive charts and trend analysis
 
-ITC InsightPulse empowers business leaders, analysts, and planners with:
+*Forecasting & Planning*
+* Sales forecasting using historical data
+* Scenario analysis for business planning
+* Inventory monitoring with stock risk alerts
 
-Real-time KPI monitoring
-Forecast-driven inventory planning
-Capital allocation intelligence
-Brand-level performance diagnostics
-Interactive visual storytelling
-Enterprise-style dashboard experiences
+*Simulated Storefront*
+* Simple storefront to simulate customer transactions
+* Transaction flow connected to the analytics environment
 
-The platform is engineered to support data-driven strategic decisions across multiple PCPB product portfolios.
+*Backend Integration*
+* API layer for communication between frontend and database
+* Validation and structured data processing
+* Modular architecture for scalability
 
-🚀 Core Modules
-🧭 Executive Control Room (app.py)
 
-The primary command center for leadership and operational monitoring.
+## System Architecture
 
-Features
-Real-time KPI transaction cards
-Revenue and profitability trend analysis
-Regional and category-wise performance breakdowns
-Interactive filtering and drill-down capabilities
-Dynamic Plotly visualizations
-Responsive dark-themed UI
-Insights Delivered
-Revenue growth tracking
-Sales concentration analysis
-Market performance benchmarking
-Executive summary metrics
-📈 Strategic Planning Lab (planning_hub.py)
+Storefront / Dashboard
+         │
+         ▼
+   FastAPI Backend
+         │
+         ▼
+   MySQL Database
+   
 
-An AI-assisted planning environment focused on forecasting and inventory optimization.
+## Project Structure:
 
-Features
-Demand forecasting using Holt-Winters Exponential Smoothing
-Automated stock safety alerts
-Inventory risk monitoring
-Seasonal sales trend analysis
-Future demand simulation
-Forecasting Engine
+```plaintext
+├── app.py                    # Main application & navigation
+├── api_server.py             # Backend API
+├── preprocess.py             # Data preparation
+└── pages/
+    ├── Corporate_Dashboard.py
+    ├── web_server.py
+    ├── planning_hub.py
+    ├── fund_allocator.py
+    └── brand_correlation.py
+```
 
-Built using Statsmodels to deliver:
+## Tech Stack
 
-Trend-aware forecasting
-Seasonality detection
-Time-series smoothing models
-Predictive operational insights
-💰 Fund Allocator Dashboard (fund_allocator.py)
+**Frontend & UI**
+* Streamlit
+* HTML / CSS
+  
+**Backend**
+* FastAPI
+* Pydantic
 
-A financial strategy workspace designed for optimized capital distribution.
+**Database**
+* MySQL
+* SQLAlchemy
 
-Features
-ROI-based allocation modeling
-Scenario simulation matrix
-Historical efficiency comparison
-Investment prioritization analytics
-Budget optimization insights
-Business Value
+**Analytics & Forecasting**
+* Pandas
+* NumPy
+* Statsmodels
 
-Helps leadership:
+**Visualization**
+* Plotly
 
-Maximize marketing efficiency
-Identify high-performing investment channels
-Reduce inefficient spend
-Improve strategic allocation decisions
+
+## Local Setup
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/your-username/itc-insightpulse.git
+cd itc-insightpulse
+```
+### 2. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+### 3. Configure Database
+Create a MySQL database:
+```sql
+CREATE DATABASE itc_sales_db;
+```
+Update database credentials in the configuration files.
+### 4. Run the Backend
+```bash
+python api_server.py
+```
+### 5. Launch the Dashboard
+```bash
+streamlit run app.py
+```
+
+## Project Goals
+* Reduce manual reporting effort
+* Improve access to business insights
+* Support forecasting and planning
+* Demonstrate scalable analytics architecture
+
+
+Built as an internship project focused on **Business Intelligence, Sales Analytics, Forecasting, and Data-Driven Decision Support**.
