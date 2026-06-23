@@ -44,8 +44,7 @@ portfolio_catalog = {
 st.markdown('<div class="analytics-box">', unsafe_allow_html=True)
 st.markdown(f"<h3 style='color:{COLORS['accent2']}; margin-top:0;'>🛒 Interactive Operator Checkout Invoice</h3>", unsafe_allow_html=True)
 
-# FIXED: We place the interactive layout selectors OUTSIDE an st.form block 
-# This forces Streamlit to immediately update the product array when the brand changes.
+# Layout Split Columns
 col1, col2 = st.columns(2)
 
 with col1:
@@ -65,9 +64,9 @@ with col1:
     order_quantity = st.number_input("3. Choose Volume Units:", min_value=1, max_value=250, value=5)
     
 with col2:
-    distribution_medium = st.selectbox("4. Sales Channel Classification:", ["E-Commerce (Amazon)", "Merchandising (Shoppers Stop)", "Retailer (Traditional Trade)"])
-    geographic_region = st.selectbox("5. Target Market Region:", ["North", "South", "East", "West", "NorthEast"])
-    logistics_partner = st.text_input("6. Logistical Distributor Wholesaler:", value="ITC Distribution Hub Ltd")
+    # FIXED: Sales Channel drop-down selector has been removed to match e-commerce containment properties.
+    geographic_region = st.selectbox("4. Target Market Region:", ["North", "South", "East", "West", "NorthEast"])
+    logistics_partner = st.text_input("5. Logistical Distributor Wholesaler:", value="ITC Distribution Hub Ltd")
     
     bill_subtotal = round(calculated_unit_price * order_quantity, 2)
     st.markdown(f"""
@@ -80,7 +79,7 @@ with col2:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Replacing st.form_submit_button with a normal st.button to support live cascading operations
+# Standard submission bridge action hook trigger
 submit_button = st.button("🚀 Submit Invoice Order Package", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -99,7 +98,7 @@ if submit_button:
         "Total_Amount": float(bill_subtotal),
         "Region": geographic_region,
         "Distributor": logistics_partner,
-        "Channel": distribution_medium,
+        "Channel": "E-Commerce",  # FIXED: Automated background data tag mapping assignment injection
         "Stock_Level": random.randint(300, 2500)
     }
     
@@ -113,7 +112,7 @@ if submit_button:
         if response.status_code == 200:
             st.success(f"✅ Success (HTTP 200): Transaction added! Return message: {response.json().get('message')}")
             
-            # FIXED FROM PREVIOUS STEP: Clears Streamlit cache arrays so app.py displays updates instantly
+            # Clears Streamlit cache arrays so dashboard displays updates instantly
             st.cache_data.clear()
             
             with st.expander("🔍 View Transmitted API JSON Payload"):
